@@ -22,33 +22,32 @@ def get_signals():
                 progress=False
             )
 
-            # Skip empty data
             if data.empty:
+
                 results.append({
                     "market": name,
                     "price": "N/A",
                     "signal": "NO DATA"
                 })
+
                 continue
 
-            close_prices = data["Close"]
+            closes = data["Close"].tolist()
 
-            # Convert Series safely
-            if hasattr(close_prices, "values"):
-                close_prices = close_prices.values.flatten()
+            if len(closes) < 10:
 
-            if len(close_prices) < 10:
                 results.append({
                     "market": name,
                     "price": "N/A",
                     "signal": "NO DATA"
                 })
+
                 continue
 
-            latest_price = float(close_prices[-1])
+            latest_price = closes[-1]
 
-            fast_ma = sum(close_prices[-5:]) / 5
-            slow_ma = sum(close_prices[-10:]) / 10
+            fast_ma = sum(closes[-5:]) / 5
+            slow_ma = sum(closes[-10:]) / 10
 
             signal = "NO TRADE"
 
@@ -64,7 +63,7 @@ def get_signals():
                 "signal": signal
             })
 
-        except Exception as e:
+        except Exception:
 
             results.append({
                 "market": name,
