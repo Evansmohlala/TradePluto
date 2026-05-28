@@ -13,28 +13,63 @@ def get_signals():
 
     for name, symbol in markets.items():
 
-        data = yf.download(symbol, period="2d", interval="15m")
+        try:
 
-        data['MA_FAST'] = data['Close'].rolling(5).mean()
-        data['MA_SLOW'] = data['Close'].rolling(10).mean()
+            data = yf.download(
+                symbol,
+                period="5d",
+                interval="1h",
+                progress=False
+            )
 
-        latest_fast = data['MA_FAST'].iloc[-1]
-        latest_slow = data['MA_SLOW'].iloc[-1]
+            # Skip empty data
+            if data.empty:
+                results.append({
+                    "market": name,
+                    "price": "N/A",
+                    "signal": "NO DATA"
+                })
+                continue
 
-        latest_price = float(data['Close'].iloc[-1])
+            close_prices = data["Close"]
 
-        signal = "NO TRADE"
+            # Convert Series safely
+            if hasattr(close_prices, "values"):
+                close_prices = close_prices.values.flatten()
 
-        if latest_fast > latest_slow:
-            signal = "BUY"
+            if len(close_prices) < 10:
+                results.append({
+                    "market": name,
+                    "price": "N/A",
+                    "signal": "NO DATA"
+                })
+                continue
 
-        elif latest_fast < latest_slow:
-            signal = "SELL"
+            latest_price = float(close_prices[-1])
 
-        results.append({
-            "market": name,
-            "price": round(latest_price, 2),
-            "signal": signal
-        })
+            fast_ma = sum(close_prices[-5:]) / 5
+            slow_ma = sum(close_prices[-10:]) / 10
+
+            signal = "NO TRADE"
+
+            if fast_ma > slow_ma:
+                signal = "BUY"
+
+            elif fast_ma < slow_ma:
+                signal = "SELL"
+
+            results.append({
+                "market": name,
+                "price": round(latest_price, 2),
+                "signal": signal
+            })
+
+        except Exception as e:
+
+            results.append({
+                "market": name,
+                "price": "ERROR",
+                "signal": "ERROR"
+            })
 
     return results
